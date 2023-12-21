@@ -6,8 +6,9 @@ for (let i = 0; i < data["samples"].length; i++)
   {
     temp_value = data["samples"][i];
     temp_list = [];
-    for (let j = 0; j <10; j++)
+    for (let j = 0; j <temp_value["otu_ids"].length; j++)
       {
+        if (j>=10){break}
         temp_list.push(
         	[temp_value["otu_ids"][j], temp_value["sample_values"][j], temp_value["otu_labels"][j]]
         )
@@ -38,8 +39,14 @@ for (let i = 0; i < data["metadata"].length; i++)
         meta[temp_value["id"]]=temp_list} 
 
 
+let inputdata={}
+inputdata["bar"]=my_dict
+inputdata["bubble"]=bubble_dict
+inputdata["meta"]=meta
 
 
+
+function makeplot(input,number){
 
 
 margin = {top: 20, right: 30, bottom : 40, left :90}
@@ -57,18 +64,19 @@ x_scale = d3.scaleLinear()
             .domain([0, 300])
             .range([0, 400])
 part.append("g")
-		.attr("transform", "translate(0,"+height+")")
+    .attr("transform", "translate(0,"+height+")")
+    .attr("class","x grid-line")
 		.call(d3.axisBottom(x_scale).tickValues([0,50,100,150,200]).tickSizeInner(-height))
         .style("text-anchor", "end")
         
 y_scale = d3.scaleBand()
             .range([0, height])
-            .domain(my_dict[940].map(i => `OTU ${i[0]}`))
+            .domain(input["bar"][number].map(i => `OTU ${i[0]}`))
             .padding(.1)
 part.append("g")
     .call(d3.axisLeft(y_scale))
 part.selectAll("myBar")
-    .data(my_dict[940])
+    .data(input["bar"][number])
     .enter()
     .append("rect")
     .attr("x", x_scale(0))
@@ -94,15 +102,17 @@ x_scale = d3.scaleLinear()
             .range([0, width])
 part.append("g")
     .attr("transform", "translate(0,"+height+")")
-    .call(d3.axisBottom(x_scale))
-        .style("text-anchor", "end")
+    .attr("class","x grid-line")
+    .call(d3.axisBottom(x_scale).tickSizeInner(-height))
+    .style("text-anchor", "end")
 
 y_scale = d3.scaleLinear()
             .range([height,0])
             .domain([0,250])
             
 part.append("g")
-    .call(d3.axisLeft(y_scale).tickValues([0,50,100,150,200]))
+    .attr("class","y grid-line")
+    .call(d3.axisLeft(y_scale).tickSizeInner(-width).tickValues([0,50,100,150,200]))
 size=d3.scaleLinear()
         .domain([0, 250])
         .range([2, 70])
@@ -110,9 +120,14 @@ color=d3.scaleLinear()
         .domain([0, 3500])
         //.range(["blue", "brown"])
         .range(d3.schemeSet2)
+part.append("text")
+    .attr("class","x label")
+    .attr("x",width/2)
+    .attr("y",height+25)
+    .text("OTU ID")
 part.append("g")
     .selectAll("dot")
-    .data(bubble_dict[940])
+    .data(input["bubble"][number])
     .enter()
     .append("circle")
     .attr("cx", function(d,i) {return x_scale(d[0])})
@@ -140,14 +155,39 @@ table.append("div")
       .attr("id","content")
        .style("padding-left","20px")
        .style("padding-top","60px")
-d3.select("#content")
-  .selectAll("h3")
-  .data(meta[940])
-  .join("h3")
+d3.select("#sample-metadata")
+  .selectAll("h6")
+  .data(input["meta"][number])
+  .join("h6")
   .text(d=>d)
-  .style("padding-left","20px")
+  .style("padding-left","5px")
   .style("padding-top","5px")
+}
 
+
+
+
+
+d3.select("#selDataset")
+  .selectAll("myoptions")
+  .data(data["names"])
+  .enter()
+  .append("option")
+  .text(d=>d)
+  .attr("value",d=>d)
+
+
+if (d3.select("#selDataset").property("value")==940){
+  makeplot(inputdata,940)
+}
+d3.select("#selDataset")
+  .on("change",function(d){
+    var selectedoption=d3.select(this).property("value")
+    d3.selectAll("#bar, #bubble, #meta")
+      .selectAll("*")
+      .remove()
+   makeplot(inputdata, selectedoption)
+  })
 
 //console.log(bubble_dict [940])
 console.log(meta[940])
